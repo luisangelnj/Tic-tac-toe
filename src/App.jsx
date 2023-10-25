@@ -2,36 +2,12 @@
 /* eslint-disable react/prop-types */
 
 import { useState } from "react"
+import confetti from "canvas-confetti";
 
-const TURNS = {
-  X: 'x',
-  O: 'o'
-}
-
-const Square = ({ children, isSelected, updateBoard, index }) => {
-  const className = `square ${isSelected && 'is-selected'}`
-
-  const handleClick = () => {
-    updateBoard(index)
-  }
-
-  return (
-    <div onClick={handleClick} className={className}>
-      {children}
-    </div>
-  )
-}
-
-const WINNER_COMBOS = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6]
-]
+import { Square } from "./components/Square";
+import { TURNS } from "./constants";
+import { checkEndGame, checkWinnerFrom } from "./logic/board";
+import { WinnerModal } from "./components/WinnerModal";
 
 
 function App() {
@@ -43,19 +19,11 @@ function App() {
   // null es que no hay ganador, false es que hay un empate
   const [winner, setWinner] = useState(null);
 
-  const checkWinner = (boardToCheck) => {
-    // revisamos todas las combinaciones ganadoras
-    for (const combo of WINNER_COMBOS) {
-      const [a, b, c] = combo
-      if (
-        boardToCheck[a] &&
-        boardToCheck[a] == boardToCheck[b] &&
-        boardToCheck[a] == boardToCheck[c]
-      ) {
-        return boardToCheck[a]
-      }
-    }
-    return null;
+
+  const resetGame = () => {
+    setBoard(Array(9).fill(null))
+    setTurn(TURNS.X);
+    setWinner(null)
   }
 
   const updateBoard = (index) => {
@@ -72,26 +40,31 @@ function App() {
     setTurn(newTurn);
 
     // Revisar si hay un ganador
-    const newWinner = checkWinner(newBoard);
+    const newWinner = checkWinnerFrom(newBoard);
     if (newWinner) {
+      confetti()
       setWinner(newWinner)
-      alert(`El ganador es ${newWinner}`)
-     }
+    }
+    else if (checkEndGame(newBoard)) {
+      setWinner(false) //empate
+    }
+    // Check if game is over
   }
 
   return (
     <main className="board">
       <h1>Tic tac toe</h1>
+      <button onClick={resetGame}>Reset del juego</button>
       <section className="game">
         {
-          board.map((_, index) => {
+          board.map((square, index) => {
             return (
               <Square
                 key={index}
                 index={index}
                 updateBoard={updateBoard}
               >
-                {board[index]}
+                {square}
               </Square>
             )
           })
@@ -105,6 +78,9 @@ function App() {
           {TURNS.O}
         </Square>
       </section>
+
+      <WinnerModal resetGame={ resetGame } winner = {winner} />
+
     </main>
   )
 }
